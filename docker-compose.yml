@@ -1,0 +1,135 @@
+# Copyright © BZ'NEXA. All rights reserved.
+# ARI Platform - Docker Compose Configuration
+# 인프라 서비스 (PostgreSQL, Redis, RabbitMQ) + NestJS API Server
+
+version: '3.9'
+
+services:
+  # ──────────────────────────────────────────────
+  # PostgreSQL 16 - 메인 데이터베이스
+  # ──────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: ari-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ari_db}
+      POSTGRES_USER: ${DB_USER:-ari_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      TZ: Asia/Seoul
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ari-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ari_user} -d ${DB_NAME:-ari_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────────
+  # Redis 7 - 세션/캐시/Rate Limiting
+  # ──────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: ari-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required} --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ari-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────────
+  # RabbitMQ 3.13 - 메시지 큐 (워터마킹, 인코딩, 알림)
+  # ──────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: ari-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-ari_mq}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-ari}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"       # AMQP 프로토콜
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672" # 관리 대시보드
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - ari-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ──────────────────────────────────────────────
+  # NestJS API Server
+  # 로컬 개발 시에는 이 서비스를 내리고 npm run start:dev 사용 가능
+  # ──────────────────────────────────────────────
+  # server:
+  #   build:
+  #     context: ./server
+  #     dockerfile: Dockerfile
+  #   container_name: ari-server
+  #   restart: unless-stopped
+  #   environment:
+  #     NODE_ENV: ${NODE_ENV:-development}
+  #     PORT: ${SERVER_PORT:-4000}
+  #     DB_HOST: postgres
+  #     DB_PORT: 5432
+  #     DB_NAME: ${DB_NAME:-ari_db}
+  #     DB_USER: ${DB_USER:-ari_user}
+  #     DB_PASSWORD: ${DB_PASSWORD}
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     REDIS_PASSWORD: ${REDIS_PASSWORD}
+  #     RABBITMQ_URL: amqp://${RABBITMQ_USER:-ari_mq}:${RABBITMQ_PASSWORD}@rabbitmq:5672/${RABBITMQ_VHOST:-ari}
+  #     JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+  #     JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+  #   ports:
+  #     - "${SERVER_PORT:-4000}:4000"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   volumes:
+  #     - ./server:/app
+  #     - /app/node_modules
+  #     - upload_data:/app/uploads
+  #   networks:
+  #     - ari-network
+
+# ──────────────────────────────────────────────
+# 영구 볼륨
+# ──────────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  # upload_data:
+  #   driver: local
+
+# ──────────────────────────────────────────────
+# 내부 네트워크
+# ──────────────────────────────────────────────
+networks:
+  ari-network:
+    driver: bridge
+    name: ari-network
