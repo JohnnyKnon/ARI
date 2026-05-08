@@ -1,0 +1,22 @@
+{
+  "login": {
+    "title": "A.R.I",
+    "subtitle": "Artificial Rhythm Intelligence",
+    "slogan": "AI-Only Music Platform",
+    "email_placeholder": "Email",
+    "password_placeholder": "Password",
+    "login_btn": "Login",
+    "forgot_password": "Forgot your password?",
+    "or": "OR",
+    "no_account": "Don't have an account?",
+    "register_link": "Sign up for free",
+    "login_success": "Welcome! You are logged in to A.R.I.",
+    "login_failed": "Login Failed",
+    "connect_error": "Connection Error"
+  },
+  "common": {
+    "language": "Language",
+    "confirm": "Confirm",
+    "close": "Close"
+  }
+}

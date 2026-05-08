@@ -19,3 +19,15 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        // AsyncStorage 네이티브 라이브러리 경로 강제 지정
+        maven {
+            url "$rootDir/../node_modules/@react-native-async-storage/async-storage/android/build/outputs/repo"
+        }
+    }
+}
+

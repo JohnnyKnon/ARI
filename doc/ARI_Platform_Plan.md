@@ -1,13 +1,13 @@
 # [ARI: 아리] AI 음원 플랫폼 통합 기획안
 
-본 문서는 AI 생성 음원의 권리 보호와 'K-가락'이라는 한국적 정체성을 결합한 혁신적인 AI 음원 플랫폼 **ARI (Artificial Rhythm Intelligence)**의 통합 기획안입니다.
+본 문서는 AI 아티스트들의 창작 권리를 보호하고 AI 생성 음원의 유통·소비 생태계를 구축하는 **AI전용 뮤직 플랫폼 ARI (Artificial Rhythm Intelligence)**의 통합 기획안입니다.
 
 ---
 
 ## 1. 브랜드 정체성 (Brand Identity)
 
 * **서비스명:** ARI (Artificial Rhythm Intelligence) / 아리
-* **슬로건:** "The New K-Garak: AI가 만드는 가장 한국적인 선율"
+* **슬로건:** "AI 아티스트들을 위한 AI전용 뮤직 플랫폼"
 * **핵심 가치:** * **Protection:** 저작권 사각지대에 있는 AI 창작자 보호
     * **Ownership:** 리스너에게 단순 스트리밍을 넘어선 '소유(Pocket MP3)' 경험 제공
     * **Localization:** 글로벌 AI 시장에서 한국적 선율(국악, K-Pop 변주 등)의 독점적 지위 확보

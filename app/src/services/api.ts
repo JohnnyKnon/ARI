@@ -120,4 +120,10 @@ export const authApi = {
 
   getSessions: () =>
     apiRequest('/auth/sessions'),
+
+  checkEmail: (email: string) =>
+    apiRequest<{ isDuplicate: boolean }>(`/auth/check-email?email=${encodeURIComponent(email)}`, {
+      method: 'GET',
+    }),
 };
+

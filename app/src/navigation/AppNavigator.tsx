@@ -8,16 +8,13 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { colors } from '../theme/index';
+import { colors, typography } from '../theme/index';
 
-// ──── 화면 컴포넌트 (Placeholder) ────
-// 실제 화면 구현 시 별도 파일로 분리
+// Auth 화면
+import LoginScreen from '../screens/auth/LoginScreen';
+import RegisterScreen from '../screens/auth/RegisterScreen';
 
-// Auth 화면들
-import { LoginPlaceholder } from '../screens/auth/LoginScreen';
-import { RegisterPlaceholder } from '../screens/auth/RegisterScreen';
-
-// 메인 탭 화면들
+// 메인 탭 화면
 import { HomePlaceholder } from '../screens/main/HomeScreen';
 import { ChartPlaceholder } from '../screens/main/ChartScreen';
 import { LibraryPlaceholder } from '../screens/main/LibraryScreen';
@@ -43,22 +40,23 @@ export type RootStackParamList = {
 
 // ──── 네비게이터 생성 ────
 const RootStack = createNativeStackNavigator<RootStackParamList>();
-const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const AuthStackNav = createNativeStackNavigator<AuthStackParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
 
 /**
  * Auth Stack (로그인/회원가입)
  */
 const AuthNavigator = () => (
-  <AuthStack.Navigator
+  <AuthStackNav.Navigator
     screenOptions={{
       headerShown: false,
       contentStyle: { backgroundColor: colors.dark.bgPrimary },
+      animation: 'slide_from_right',
     }}
   >
-    <AuthStack.Screen name="Login" component={LoginPlaceholder} />
-    <AuthStack.Screen name="Register" component={RegisterPlaceholder} />
-  </AuthStack.Navigator>
+    <AuthStackNav.Screen name="Login" component={LoginScreen} />
+    <AuthStackNav.Screen name="Register" component={RegisterScreen} />
+  </AuthStackNav.Navigator>
 );
 
 /**
@@ -79,9 +77,9 @@ const MainNavigator = () => (
       tabBarActiveTintColor: colors.primary,
       tabBarInactiveTintColor: colors.gray500,
       tabBarLabelStyle: {
-        fontFamily: 'Pretendard',
+        fontFamily: typography.fontFamily,
         fontSize: 11,
-        fontWeight: '500',
+        fontWeight: typography.weights.medium,
       },
     }}
   >
@@ -110,10 +108,10 @@ const MainNavigator = () => (
 
 /**
  * 루트 네비게이터
- * TODO: 인증 상태에 따라 Auth/Main 자동 전환 로직 추가
+ * TODO: Zustand store에서 인증 상태를 구독하여 자동 전환
  */
 const AppNavigator: React.FC = () => {
-  // TODO: Zustand store에서 인증 상태 구독
+  // TODO: const { isAuthenticated } = useAuthStore();
   const isAuthenticated = false;
 
   return (

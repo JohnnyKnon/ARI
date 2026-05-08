@@ -1,7 +1,7 @@
 /**
  * Copyright © BZ'NEXA. All rights reserved.
  * ARI Platform - 커스텀 텍스트 입력 컴포넌트
- * Glassmorphism 스타일 + 포커스 애니메이션
+ * Cyber-Minimalism (Apple Music Style) - 라벨 없음, 플레이스홀더 중심
  */
 
 import React, { useState, useRef } from 'react';
@@ -15,13 +15,12 @@ import {
   type TextInputProps,
   type ViewStyle,
 } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { colors, typography, spacing, borderRadius } from '../../theme/index';
 
 interface AriInputProps extends TextInputProps {
-  /** 라벨 텍스트 */
-  label: string;
-  /** 왼쪽 아이콘 (이모지 또는 텍스트) */
-  icon?: string;
+  /** 아이콘 이름 (Ionicons) */
+  iconName?: string;
   /** 에러 메시지 */
   error?: string;
   /** 비밀번호 토글 표시 여부 */
@@ -31,25 +30,24 @@ interface AriInputProps extends TextInputProps {
 }
 
 const AriInput: React.FC<AriInputProps> = ({
-  label,
-  icon,
+  iconName,
   error,
   isPassword = false,
   containerStyle,
+  placeholder,
   ...rest
 }) => {
-  // 포커스 상태 관리
   const [isFocused, setIsFocused] = useState(false);
   const [isSecure, setIsSecure] = useState(isPassword);
 
-  // 포커스 애니메이션 값
+  // 포커스 애니메이션 (언더라인 글로우 효과)
   const focusAnim = useRef(new Animated.Value(0)).current;
 
   const handleFocus = () => {
     setIsFocused(true);
     Animated.timing(focusAnim, {
       toValue: 1,
-      duration: 200,
+      duration: 300,
       useNativeDriver: false,
     }).start();
   };
@@ -58,38 +56,33 @@ const AriInput: React.FC<AriInputProps> = ({
     setIsFocused(false);
     Animated.timing(focusAnim, {
       toValue: 0,
-      duration: 200,
+      duration: 300,
       useNativeDriver: false,
     }).start();
   };
 
-  // 포커스 시 보더 색상 애니메이션
+  // 포커스 시 언더라인 색상 및 글로우 전환
   const borderColor = focusAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [colors.dark.border, colors.primary],
+    outputRange: ['#252538', colors.teal], // 기본 어두운 선 -> 민트색 네온
   });
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {/* 라벨 */}
-      <Text style={[styles.label, isFocused && styles.labelFocused]}>
-        {label}
-      </Text>
+      {/* 입력 필드 컨테이너 (애플뮤직 스타일의 미니멀한 박스) */}
+      <View style={[styles.inputWrapper, error ? styles.inputError : null]}>
+        {iconName && (
+          <Ionicons
+            name={iconName}
+            size={20}
+            color={isFocused ? colors.teal : colors.gray500}
+            style={styles.icon}
+          />
+        )}
 
-      {/* 입력 필드 컨테이너 (Glassmorphism 효과) */}
-      <Animated.View
-        style={[
-          styles.inputContainer,
-          { borderColor },
-          error ? styles.inputError : null,
-        ]}
-      >
-        {/* 아이콘 */}
-        {icon && <Text style={styles.icon}>{icon}</Text>}
-
-        {/* TextInput */}
         <TextInput
           style={styles.input}
+          placeholder={placeholder}
           placeholderTextColor={colors.gray500}
           onFocus={handleFocus}
           onBlur={handleBlur}
@@ -98,23 +91,30 @@ const AriInput: React.FC<AriInputProps> = ({
           {...rest}
         />
 
-        {/* 비밀번호 토글 */}
         {isPassword && (
           <TouchableOpacity
             onPress={() => setIsSecure(!isSecure)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={styles.toggleButton}
           >
-            <Text style={styles.toggleText}>
-              {isSecure ? '👁️' : '🙈'}
-            </Text>
+            <Ionicons
+              name={isSecure ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={colors.gray500}
+            />
           </TouchableOpacity>
         )}
-      </Animated.View>
+      </View>
+
+      {/* 미래지향적 언더라인 글로우 효과 */}
+      <Animated.View style={[styles.underline, { backgroundColor: borderColor }]} />
 
       {/* 에러 메시지 */}
       {error && (
-        <Text style={styles.errorText}>{error}</Text>
+        <View style={styles.errorRow}>
+          <Ionicons name="alert-circle" size={14} color={colors.error} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
       )}
     </View>
   );
@@ -122,55 +122,49 @@ const AriInput: React.FC<AriInputProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
-  label: {
-    fontFamily: typography.fontFamily,
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: typography.weights.medium,
-    color: colors.dark.textSecondary,
-    marginBottom: spacing.xs + 2,
-    marginLeft: spacing.xs,
-  },
-  labelFocused: {
-    color: colors.primaryLight,
-  },
-  inputContainer: {
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.dark.bgTertiary,
-    borderRadius: borderRadius.md,
-    borderWidth: 1.5,
-    borderColor: colors.dark.border,
+    backgroundColor: '#13131F', // 극도로 어두운 배경 (애플뮤직 스타일)
     paddingHorizontal: spacing.md,
-    height: 52,
+    height: 56,
+    borderRadius: 4, // 각진 느낌을 살린 미니멀 라운딩
   },
   inputError: {
+    borderWidth: 1,
     borderColor: colors.error,
   },
   icon: {
-    fontSize: 18,
     marginRight: spacing.sm,
   },
   input: {
     flex: 1,
     fontFamily: typography.fontFamily,
     fontSize: typography.sizes.body,
-    color: colors.dark.textPrimary,
+    color: '#F9FAFB', // 부드러운 오프화이트로 가독성 확보
     height: '100%',
     padding: 0,
   },
   toggleButton: {
     paddingLeft: spacing.sm,
   },
-  toggleText: {
-    fontSize: 18,
+  underline: {
+    height: 1,
+    marginTop: 2,
+    borderRadius: 1,
+  },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.xs,
+    marginLeft: 2,
   },
   errorText: {
     fontFamily: typography.fontFamily,
     fontSize: typography.sizes.caption,
     color: colors.error,
-    marginTop: spacing.xs,
     marginLeft: spacing.xs,
   },
 });

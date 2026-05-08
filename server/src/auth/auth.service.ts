@@ -37,7 +37,19 @@ export class AuthService {
   ) {}
 
   /**
+   * 이메일 중복 체크
+   * BZ'NEXA Copyright
+   */
+  async checkEmailDuplicate(email: string): Promise<boolean> {
+    const existing = await this.userRepository.findOne({
+      where: { email },
+    });
+    return !!existing; // 존재하면 true, 없으면 false
+  }
+
+  /**
    * 회원가입
+
    * ToS 동의 정보도 함께 기록 (법적 방어)
    */
   async register(

@@ -34,7 +34,24 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   /**
+   * GET /api/v1/auth/check-email - 이메일 중복 체크
+   * BZ'NEXA Copyright
+   */
+  @Public()
+  @Get('check-email')
+  @HttpCode(HttpStatus.OK)
+  async checkEmail(@Req() req: Request) {
+    const email = req.query.email as string;
+    if (!email) {
+      return { isDuplicate: false };
+    }
+    const isDuplicate = await this.authService.checkEmailDuplicate(email);
+    return { isDuplicate };
+  }
+
+  /**
    * POST /api/v1/auth/register - 회원가입
+
    */
   @Public()
   @Post('register')

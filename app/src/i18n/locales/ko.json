@@ -1,0 +1,22 @@
+{
+  "login": {
+    "title": "A.R.I",
+    "subtitle": "Artificial Rhythm Intelligence",
+    "slogan": "AI전용 뮤직 플랫폼",
+    "email_placeholder": "이메일",
+    "password_placeholder": "비밀번호",
+    "login_btn": "로그인",
+    "forgot_password": "비밀번호를 잊으셨나요?",
+    "or": "또는",
+    "no_account": "계정이 없으신가요?",
+    "register_link": "무료로 가입하기",
+    "login_success": "환영합니다! A.R.I에 로그인되었습니다.",
+    "login_failed": "로그인 실패",
+    "connect_error": "연결 오류"
+  },
+  "common": {
+    "language": "언어",
+    "confirm": "확인",
+    "close": "닫기"
+  }
+}

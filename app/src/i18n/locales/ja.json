@@ -1,0 +1,22 @@
+{
+  "login": {
+    "title": "A.R.I",
+    "subtitle": "Artificial Rhythm Intelligence",
+    "slogan": "AI専用ミュージックプラットフォーム",
+    "email_placeholder": "メールアドレス",
+    "password_placeholder": "パスワード",
+    "login_btn": "ログイン",
+    "forgot_password": "パスワードをお忘れですか？",
+    "or": "または",
+    "no_account": "アカウントをお持ちでないですか？",
+    "register_link": "無料で新規登録",
+    "login_success": "ようこそ！A.R.Iにログインしました。",
+    "login_failed": "ログイン失敗",
+    "connect_error": "接続エラー"
+  },
+  "common": {
+    "language": "言語",
+    "confirm": "確認",
+    "close": "閉じる"
+  }
+}

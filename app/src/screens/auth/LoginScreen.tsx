@@ -1,7 +1,7 @@
 /**
  * Copyright © BZ'NEXA. All rights reserved.
  * ARI Platform - 로그인 화면
- * 프리미엄 다크 모드 UI + 애니메이션
+ * Cyber-Minimalism 스타일 - 언어 설정 영구 저장(AsyncStorage) 적용
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -13,100 +13,94 @@ import {
   ScrollView,
   Platform,
   Animated,
-  Dimensions,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import AriInput from '../../components/ui/Input';
 import AriButton from '../../components/ui/Button';
-import { colors, typography, spacing, borderRadius } from '../../theme/index';
+import { colors, typography, spacing } from '../../theme/index';
 import { authApi, setAccessToken } from '../../services/api';
 import type { AuthStackParamList } from '../../navigation/AppNavigator';
 
 type LoginNav = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<LoginNav>();
+  const { t, i18n } = useTranslation();
 
-  // 폼 상태
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  // 등장 애니메이션
-  const logoAnim = useRef(new Animated.Value(0)).current;
-  const formAnim = useRef(new Animated.Value(0)).current;
-  const bottomAnim = useRef(new Animated.Value(0)).current;
+  const [langMenuVisible, setLangMenuVisible] = useState(false);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
 
   useEffect(() => {
-    // 순차 등장 애니메이션 (로고 → 폼 → 하단)
-    Animated.stagger(150, [
-      Animated.spring(logoAnim, {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
         toValue: 1,
-        tension: 50,
-        friction: 8,
+        duration: 800,
         useNativeDriver: true,
       }),
-      Animated.spring(formAnim, {
-        toValue: 1,
-        tension: 50,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-      Animated.spring(bottomAnim, {
-        toValue: 1,
-        tension: 50,
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 30,
         friction: 8,
         useNativeDriver: true,
       }),
     ]).start();
-  }, [logoAnim, formAnim, bottomAnim]);
+  }, [fadeAnim, slideAnim]);
 
-  // 유효성 검증
   const validate = (): boolean => {
     const newErrors: typeof errors = {};
-
-    if (!email.trim()) {
-      newErrors.email = '이메일을 입력해주세요.';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = '올바른 이메일 형식을 입력해주세요.';
-    }
-
-    if (!password) {
-      newErrors.password = '비밀번호를 입력해주세요.';
-    }
-
+    if (!email.trim()) newErrors.email = t('login.email_placeholder') + '를 입력해주세요.';
+    if (!password) newErrors.password = t('login.password_placeholder') + '를 입력해주세요.';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // 로그인 처리
   const handleLogin = async () => {
     if (!validate()) return;
-
     setLoading(true);
     try {
-      const response = await authApi.login({ email: email.trim(), password }) as {
-        success: boolean;
-        data?: { accessToken: string };
-        error?: { message: string };
-      };
-
+      const response = await authApi.login({ email: email.trim(), password }) as any;
       if (response.success && response.data?.accessToken) {
         setAccessToken(response.data.accessToken);
-        // TODO: 메인 화면으로 전환 (Zustand store 업데이트)
-        Alert.alert('🎵 환영합니다!', 'ARI에 로그인되었습니다.');
       } else {
-        Alert.alert('로그인 실패', response.error?.message || '다시 시도해주세요.');
+        Alert.alert(t('login.login_failed'), response.error?.message || '실패');
       }
-    } catch (err) {
-      Alert.alert('연결 오류', '서버에 연결할 수 없습니다. 네트워크를 확인해주세요.');
+    } catch {
+      Alert.alert(t('login.connect_error'), '서버에 연결할 수 없습니다.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 언어 변경 및 AsyncStorage 저장
+  const changeLanguage = async (lang: string) => {
+    try {
+      await i18n.changeLanguage(lang);
+      await AsyncStorage.setItem('user-language', lang);
+    } catch (e) {
+      console.log('[LoginScreen] Failed to save language:', e);
+    }
+    setLangMenuVisible(false);
+  };
+
+  const getCurrentLangLabel = () => {
+    switch (i18n.language) {
+      case 'ko': return 'KO';
+      case 'en': return 'EN';
+      case 'ja': return 'JP';
+      default: return 'EN';
     }
   };
 
@@ -115,175 +109,134 @@ const LoginScreen: React.FC = () => {
       style={styles.screen}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <View style={styles.bgGlowPurple} />
+      <View style={styles.bgGlowTeal} />
+
+      <View style={styles.headerRight}>
+        <TouchableOpacity
+          style={styles.langButton}
+          onPress={() => setLangMenuVisible(true)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="globe-outline" size={16} color={colors.teal} />
+          <Text style={styles.langButtonText}>{getCurrentLangLabel()}</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* ────── 로고 / 브랜딩 영역 ────── */}
         <Animated.View
-          style={[
-            styles.logoSection,
-            {
-              opacity: logoAnim,
-              transform: [
-                {
-                  translateY: logoAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [-30, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
+          style={{
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          }}
         >
-          {/* 브랜드 글로우 효과 */}
-          <View style={styles.glowContainer}>
-            <View style={styles.glowOuter} />
-            <View style={styles.glowInner} />
+          <View style={styles.logoSection}>
+            <Text style={styles.logoText}>{t('login.title')}</Text>
+            <Text style={styles.logoSubtitle}>{t('login.subtitle')}</Text>
           </View>
 
-          {/* 로고 텍스트 */}
-          <Text style={styles.logoEmoji}>🎵</Text>
-          <Text style={styles.logoText}>ARI</Text>
-          <Text style={styles.logoSubtitle}>Artificial Rhythm Intelligence</Text>
-          <Text style={styles.slogan}>AI가 만드는 가장 한국적인 선율</Text>
-        </Animated.View>
+          <View style={styles.sloganSection}>
+            <Text style={styles.sloganText}>{t('login.slogan')}</Text>
+          </View>
 
-        {/* ────── 로그인 폼 ────── */}
-        <Animated.View
-          style={[
-            styles.formSection,
-            {
-              opacity: formAnim,
-              transform: [
-                {
-                  translateY: formAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [30, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          {/* 이메일 입력 */}
-          <AriInput
-            label="이메일"
-            icon="📧"
-            placeholder="artist@example.com"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
-            }}
-            error={errors.email}
-            keyboardType="email-address"
-            autoComplete="email"
-            returnKeyType="next"
-          />
-
-          {/* 비밀번호 입력 */}
-          <AriInput
-            label="비밀번호"
-            icon="🔒"
-            placeholder="비밀번호를 입력하세요"
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
-            }}
-            error={errors.password}
-            isPassword
-            returnKeyType="done"
-            onSubmitEditing={handleLogin}
-          />
-
-          {/* 로그인 버튼 */}
-          <AriButton
-            title="로그인"
-            onPress={handleLogin}
-            loading={loading}
-            disabled={!email.trim() || !password}
-            style={styles.loginButton}
-          />
-
-          {/* 비밀번호 찾기 */}
-          <AriButton
-            title="비밀번호를 잊으셨나요?"
-            onPress={() => {
-              // TODO: 비밀번호 재설정 화면
-              Alert.alert('준비 중', '비밀번호 재설정 기능은 곧 제공됩니다.');
-            }}
-            variant="ghost"
-            style={styles.forgotButton}
-          />
-        </Animated.View>
-
-        {/* ────── 구분선 ────── */}
-        <Animated.View style={[styles.dividerSection, { opacity: bottomAnim }]}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>또는</Text>
-          <View style={styles.dividerLine} />
-        </Animated.View>
-
-        {/* ────── 소셜 로그인 (추후 활성화) ────── */}
-        <Animated.View
-          style={[
-            styles.socialSection,
-            {
-              opacity: bottomAnim,
-              transform: [
-                {
-                  translateY: bottomAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [20, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <View style={styles.socialRow}>
-            <AriButton
-              title="카카오"
-              icon="💬"
-              onPress={() => Alert.alert('준비 중', '카카오 로그인은 곧 제공됩니다.')}
-              variant="social"
-              disabled
+          <View style={styles.formSection}>
+            <AriInput
+              placeholder={t('login.email_placeholder')}
+              iconName="mail-outline"
+              value={email}
+              onChangeText={(text) => setEmail(text)}
+              error={errors.email}
+              keyboardType="email-address"
             />
-            <AriButton
-              title="구글"
-              icon="🔍"
-              onPress={() => Alert.alert('준비 중', '구글 로그인은 곧 제공됩니다.')}
-              variant="social"
-              disabled
+
+            <AriInput
+              placeholder={t('login.password_placeholder')}
+              iconName="lock-closed-outline"
+              value={password}
+              onChangeText={(text) => setPassword(text)}
+              error={errors.password}
+              isPassword
+              onSubmitEditing={handleLogin}
             />
+
             <AriButton
-              title="Apple"
-              icon="🍎"
-              onPress={() => Alert.alert('준비 중', 'Apple 로그인은 곧 제공됩니다.')}
-              variant="social"
-              disabled
+              title={t('login.login_btn')}
+              onPress={handleLogin}
+              loading={loading}
+              disabled={!email.trim() || !password}
+              style={styles.loginButton}
+            />
+
+            <AriButton
+              title={t('login.forgot_password')}
+              onPress={() => Alert.alert('Notice', 'Coming soon')}
+              variant="ghost"
+              style={styles.forgotButton}
             />
           </View>
-          <Text style={styles.socialHint}>소셜 로그인은 곧 지원됩니다</Text>
-        </Animated.View>
 
-        {/* ────── 회원가입 링크 ────── */}
-        <Animated.View style={[styles.bottomSection, { opacity: bottomAnim }]}>
-          <Text style={styles.bottomText}>아직 계정이 없으신가요?</Text>
-          <AriButton
-            title="회원가입"
-            onPress={() => navigation.navigate('Register')}
-            variant="ghost"
-            textStyle={styles.registerLink}
-          />
-        </Animated.View>
+          <View style={styles.dividerSection}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>{t('login.or')}</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
-        {/* 저작권 표시 */}
-        <Text style={styles.copyright}>© BZ'NEXA. All rights reserved.</Text>
+          <View style={styles.socialSection}>
+            <AriButton title="Kakao" onPress={() => {}} variant="social" style={styles.socialBtn} />
+            <AriButton title="Google" onPress={() => {}} variant="social" style={styles.socialBtn} />
+            <AriButton title="Apple" onPress={() => {}} variant="social" style={styles.socialBtn} />
+          </View>
+
+          <View style={styles.bottomSection}>
+            <Text style={styles.bottomText}>{t('login.no_account')}</Text>
+            <AriButton
+              title={t('login.register_link')}
+              onPress={() => navigation.navigate('Register')}
+              variant="ghost"
+              textStyle={{ color: colors.teal }}
+            />
+          </View>
+
+          <Text style={styles.copyright}>© BZ'NEXA. All rights reserved.</Text>
+        </Animated.View>
       </ScrollView>
+
+      {langMenuVisible && (
+        <View style={styles.actionSheetOverlay}>
+          <TouchableOpacity
+            style={styles.actionSheetBackdrop}
+            onPress={() => setLangMenuVisible(false)}
+          />
+          <View style={styles.actionSheetContent}>
+            <Text style={styles.actionSheetTitle}>{t('common.language')}</Text>
+            
+            <TouchableOpacity style={styles.langItem} onPress={() => changeLanguage('ko')}>
+              <Text style={[styles.langItemText, i18n.language === 'ko' && styles.langItemActive]}>한국어 (KO)</Text>
+              {i18n.language === 'ko' && <Ionicons name="checkmark" size={20} color={colors.teal} />}
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.langItem} onPress={() => changeLanguage('en')}>
+              <Text style={[styles.langItemText, i18n.language === 'en' && styles.langItemActive]}>English (EN)</Text>
+              {i18n.language === 'en' && <Ionicons name="checkmark" size={20} color={colors.teal} />}
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.langItem} onPress={() => changeLanguage('ja')}>
+              <Text style={[styles.langItemText, i18n.language === 'ja' && styles.langItemActive]}>日本語 (JP)</Text>
+              {i18n.language === 'ja' && <Ionicons name="checkmark" size={20} color={colors.teal} />}
+            </TouchableOpacity>
+
+            <AriButton
+              title={t('common.close')}
+              onPress={() => setLangMenuVisible(false)}
+              style={styles.actionSheetCloseBtn}
+            />
+          </View>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 };
@@ -291,119 +244,130 @@ const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.dark.bgPrimary,
+    backgroundColor: '#0A0A12',
+  },
+  bgGlowPurple: {
+    position: 'absolute',
+    top: -100,
+    left: -100,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: colors.primary,
+    opacity: 0.15,
+  },
+  bgGlowTeal: {
+    position: 'absolute',
+    bottom: -50,
+    right: -50,
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    backgroundColor: colors.teal,
+    opacity: 0.1,
+  },
+  headerRight: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    right: spacing.xl,
+    zIndex: 10,
+  },
+  langButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#13131F',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#252538',
+  },
+  langButtonText: {
+    fontFamily: typography.fontFamily,
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginLeft: 4,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: Platform.OS === 'ios' ? 80 : 60,
+    paddingHorizontal: spacing.xl,
+    paddingTop: Platform.OS === 'ios' ? 120 : 100,
     paddingBottom: spacing.xxl,
   },
-
-  // ── 로고 영역 ──
   logoSection: {
     alignItems: 'center',
-    marginBottom: spacing.xxl,
-  },
-  glowContainer: {
-    position: 'absolute',
-    top: -40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  glowOuter: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: colors.primary,
-    opacity: 0.06,
-    position: 'absolute',
-  },
-  glowInner: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: colors.primary,
-    opacity: 0.1,
-  },
-  logoEmoji: {
-    fontSize: 48,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   logoText: {
     fontFamily: typography.fontFamily,
-    fontSize: 42,
-    fontWeight: typography.weights.bold,
-    color: colors.primary,
-    letterSpacing: 8,
+    fontSize: 48,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: 4,
+    textShadowColor: colors.primary,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 20,
   },
   logoSubtitle: {
     fontFamily: typography.fontFamily,
-    fontSize: typography.sizes.caption,
-    fontWeight: typography.weights.regular,
+    fontSize: 11,
     color: colors.gray500,
-    marginTop: spacing.xs,
     letterSpacing: 2,
   },
-  slogan: {
-    fontFamily: typography.fontFamily,
-    fontSize: typography.sizes.bodySmall,
-    color: colors.dark.textSecondary,
-    marginTop: spacing.md,
+  sloganSection: {
+    alignItems: 'center',
+    marginBottom: spacing.xxl,
   },
-
-  // ── 폼 영역 ──
+  sloganText: {
+    fontFamily: typography.fontFamily,
+    fontSize: typography.sizes.body,
+    color: colors.dark.textSecondary,
+    textAlign: 'center',
+  },
   formSection: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   loginButton: {
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
+    backgroundColor: colors.primary,
+    borderRadius: 4,
     height: 54,
   },
   forgotButton: {
-    marginTop: spacing.xs,
-    height: 40,
+    marginTop: spacing.sm,
   },
-
-  // ── 구분선 ──
   dividerSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.xl,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.dark.border,
+    backgroundColor: '#1F1F30',
   },
   dividerText: {
     fontFamily: typography.fontFamily,
-    fontSize: typography.sizes.caption,
+    fontSize: 12,
     color: colors.gray500,
     marginHorizontal: spacing.md,
   },
-
-  // ── 소셜 로그인 ──
   socialSection: {
-    marginBottom: spacing.xl,
-  },
-  socialRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: spacing.xxl,
   },
-  socialHint: {
-    fontFamily: typography.fontFamily,
-    fontSize: typography.sizes.caption,
-    color: colors.gray500,
-    textAlign: 'center',
-    marginTop: spacing.sm,
+  socialBtn: {
+    flex: 1,
+    marginHorizontal: 4,
+    backgroundColor: '#13131F',
+    borderRadius: 4,
+    height: 48,
   },
-
-  // ── 하단 ──
   bottomSection: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: spacing.md,
   },
   bottomText: {
@@ -411,20 +375,70 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.bodySmall,
     color: colors.gray500,
   },
-  registerLink: {
-    fontSize: typography.sizes.bodySmall,
-    fontWeight: typography.weights.semibold,
-  },
-
-  // ── 저작권 ──
   copyright: {
     fontFamily: typography.fontFamily,
     fontSize: 10,
     color: colors.gray500,
     textAlign: 'center',
-    opacity: 0.5,
+    opacity: 0.3,
+    marginTop: spacing.xl,
+  },
+  actionSheetOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 100,
+    justifyContent: 'flex-end',
+  },
+  actionSheetBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  actionSheetContent: {
+    backgroundColor: '#0F0F1A',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderTopWidth: 1,
+    borderColor: colors.teal,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: Platform.OS === 'ios' ? spacing.xl : spacing.lg,
+  },
+  actionSheetTitle: {
+    fontFamily: typography.fontFamily,
+    fontSize: typography.sizes.heading,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginBottom: spacing.md,
+  },
+  langItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1F1F30',
+  },
+  langItemText: {
+    fontFamily: typography.fontFamily,
+    fontSize: typography.sizes.body,
+    color: colors.dark.textSecondary,
+  },
+  langItemActive: {
+    color: colors.teal,
+    fontWeight: 'bold',
+  },
+  actionSheetCloseBtn: {
+    marginTop: spacing.lg,
+    backgroundColor: '#13131F',
+    height: 50,
   },
 });
 
-export { LoginScreen as LoginPlaceholder };
 export default LoginScreen;
